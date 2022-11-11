@@ -1,0 +1,9 @@
+
+steps:
+- name: 'gcr.io/cloud-builders/docker'
+  args: [ 'build', '-t', 'us-west2-docker.pkg.dev/stock-363101/ycng228-repo/ycng_image_predictor', '.' ]
+images: ['us-west2-docker.pkg.dev/stock-363101/ycng228-repo/ycng_image_predictor']
+#options:
+#  pool:
+#    name: 'projects/stock-ycng-228/locations/us-east1/workerPools/mypool'
+timeout: '1200s'
