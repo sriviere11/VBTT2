@@ -107,6 +107,6 @@ def generate_enhanced_data(sector,ticker):
 
 def YF_datetime():
     date_predict=datetime.now()
-    if date_predict.hour>=17:
+    if date_predict.hour>=16:
         date_predict=date_predict+timedelta(1)
     return date_predict

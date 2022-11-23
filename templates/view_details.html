@@ -8,7 +8,8 @@
   {% for table in tables %}
     <h2>{{titles[loop.index]}}</h2>
     {{ table|safe }}
-      <h4>Average return in period: <FONT COLOR=#BE5313>{{ avg_return[loop.index] }}</FONT></h4>
+      <h4>Average return in period(%): <FONT COLOR=#BE5313>{{ avg_return[loop.index] }}</FONT></h4>
+      <h4>Balanced accuracy in period: <FONT COLOR=#BE5313>{{ blc_accuracy[loop.index] }}</FONT></h4>
       <h6>Model: {{ model_html }}</h6>
       <br><br><br>
 

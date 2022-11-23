@@ -8,7 +8,9 @@
   {% for table in tables %}
     <h2>{{titles[loop.index]}}</h2>
     {{ table|safe }}
-
+      <h4>Balanced accuracy is calculated from: <FONT COLOR=#BE5313>{{ date_range[1] }}</FONT>  to: <FONT COLOR=#BE5313>{{ date_range[2] }}</FONT> </h4>
+      <h6>Model: {{ model_html }}</h6>
+      <br><br><br>
 
 
   {% endfor %}

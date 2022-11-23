@@ -20,9 +20,12 @@ ENV APP_HOME /app
 WORKDIR $APP_HOME
 COPY . ./
 
+RUN apt update && apt install tzdata -y
+ENV TZ="America/New_York"
 
-RUN conda env create -f scripts/environment.yml
-SHELL ["conda", "run", "-n", "stock", "/bin/bash", "-c"]
+
+RUN conda env create -f environment.yml
+SHELL ["conda", "run", "-n", "VBTT2", "/bin/bash", "-c"]
 RUN pip install Flask gunicorn
 #
 # Service must listen to $PORT environment variable.

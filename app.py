@@ -88,12 +88,12 @@ def ticker(ticker):
 	    # for x in is selecting each at a time
     
         if validation==True:
-            Results, Recommendations,avg_return = predict_ticker(ticker)
+            Results, Recommendations,avg_return,blc_accuracy,date_range = predict_ticker(ticker)
             data = Recommendations
             data.set_index(['Ticker'], inplace=True)
             data.index.name = None
             return render_template('view_ticker.html', tables=[data.to_html(classes='Recommendations')],\
-                                   titles=['na', ticker],version='Version '+version,model_html=model_html, avg_return=avg_return)
+                                   titles=['na', ticker],version='Version '+version,model_html=model_html, avg_return=avg_return,blc_accuracy=blc_accuracy,date_range=date_range)
 
         else:
             return f"Incorrect ticker, please fix or select another."
@@ -119,7 +119,7 @@ def details(ticker):
         # for x in is selecting each at a time
 
         if validation == True:
-            Results, Recommendations,avg_return = predict_ticker(ticker)
+            Results, Recommendations,avg_return,blc_accuracy,date_range = predict_ticker(ticker)
             data = Results  # we call this data to be able to use it in html render code we took from internet
 
             # data.set_index(['Ticker'], inplace=True)
@@ -128,7 +128,7 @@ def details(ticker):
             result_string = [Results[Results['Ticker'] == t].to_html(classes=t) for t in ticker]
             # we need to be able to create something that will be used on the function in comment below.
             return render_template('view_details.html', tables=result_string, titles=['na'] + ticker,\
-                                   version='Version '+version,model_html=model_html,avg_return=avg_return)
+                                   version='Version '+version,model_html=model_html,avg_return=avg_return,blc_accuracy=blc_accuracy,date_range=date_range)
 
         else:
             return f"Incorrect ticket, please fix or select another."
