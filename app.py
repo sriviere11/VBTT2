@@ -5,7 +5,7 @@ from yahoo_fin import stock_info as si
 from flask import *
 from VBTT2_IO.IO import read_list,delete_then_get_model_from_bucket,delete_blob,read_config_file
 from VBTT2_Predict.Predict import predict_ticker
-from VBTT2_SP500.SP500 import read_create_write_SP500
+from VBTT2_SP500.SP500 import get_SP500
 ###########################################
 app = Flask(__name__)
 
@@ -65,8 +65,9 @@ f'</br></br><b><FONT COLOR="#228335">VBTT enjoy! </br> (Nov 2022)</FONT></b>'
 @app.route('/get_sp500', methods=['GET'])
 def get_sp500():
     SP500_tickers = si.tickers_sp500()
-    delete_blob("SP500.json")
-    SP500_list = read_create_write_SP500(SP500_tickers, "SP500.json")
+    filename_json=read_config_file()[5]
+    delete_blob(filename_json)
+    get_SP500(filename_json)
     return f"JSON was generated  successfully- try again with /ticker/xxx or /details/xxx (where xxx is your list of tickers separated by '-'."
 
 
@@ -76,7 +77,7 @@ def ticker(ticker):
     ticker = ticker.upper()
     version=read_config_file()[0]
     model_html=read_config_file()[3]
-    filename_json="SP500.json"
+    filename_json=read_config_file()[5]
     check=delete_then_get_model_from_bucket(filename_json)  # delete local file and copy file from bucket to have fresh one
     #file_exists = os.path.exists("SP500.json") # no longer required with blob check above
     if check==True:  #file json exist
@@ -104,7 +105,7 @@ def ticker(ticker):
 @app.route('/details/<ticker>', methods=['GET'])
 def details(ticker):
     ticker = ticker.upper()
-    filename_json = "SP500.json"
+    filename_json = read_config_file()[5]
     version=read_config_file()[0]
     model_html=read_config_file()[3]
     check=delete_then_get_model_from_bucket(filename_json)  # delete local file and copy file from bucket to have fresh one

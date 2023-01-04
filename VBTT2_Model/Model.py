@@ -6,15 +6,12 @@ import joblib
 
 from VBTT2_Features.Features import initialize_data, preprocessing,create_train_test_set
 from VBTT2_SP500.SP500 import read_create_write_SP500, generate_enhanced_data,get_ticker_sector
-from VBTT2_IO.IO import read_config_file,upload_file_to_bucket
+from VBTT2_IO.IO import read_config_file,upload_file_to_bucket,instantiate_logging
 
 
-def Model_Train_Save(ticker_list_for_models, years, lags, additional_data, nb_predict_days):
-    # Functions for model training and algorythm data and import
-
-    # import the regressors
-    version, additional_data, regressor, MODEL,bucket=read_config_file()
-    print(regressor)
+def select_regressor(MODEL):
+    #     # import the regressor
+    logger=instantiate_logging()
 
     if MODEL == 'DecisionTree()':
         from sklearn.tree import DecisionTreeRegressor
@@ -45,7 +42,18 @@ def Model_Train_Save(ticker_list_for_models, years, lags, additional_data, nb_pr
         from sklearn.linear_model import LinearRegression
         MODEL = LinearRegression()
 
+    logger.log_text(f"Function select_regressor|  Regressor from config file:  {MODEL}")
 
+    return MODEL
+
+
+
+def Model_Train_Save(ticker_list_for_models, years, lags, additional_data, nb_predict_days):
+    # Functions for model training and algorythm data and import
+    logger=instantiate_logging()
+
+    version, additional_data, regressor, model, bucket, filename_json = read_config_file()
+    MODEL=select_regressor(model)
 
 
 
@@ -64,22 +72,26 @@ def Model_Train_Save(ticker_list_for_models, years, lags, additional_data, nb_pr
 
 
     # read master list of ticker, sector, industries or if not found, create it and save it#
-    SP500_list = read_create_write_SP500(SP500_tickers, "SP500.json")
+    filename_json=read_config_file()[5]
+    SP500_list = read_create_write_SP500(SP500_tickers, filename_json)
 
     ### validation if we have everything
-    print(f"Model Input ->years {years}")
-    print(f"Model Input ->ticker list {ticker_list_for_models}")
-    print(f"Model Input->lags {lags}")
-    print(f"Model Input ->predict days {nb_predict_days}")
-    print(f"Model Period->yesterday {yesterday}")
-    print(f"Model period->train_date_start {train_date_start}")
-    print(f"Model Period->train_date_last {train_date_last}")
-    print(f"Model Period->test_date_start {test_date_start}")
-    print(f"Model Period->test_date_last {test_date_last}")
 
-    print(f"Model This is the tickers for our model {ticker_list_for_models}")
-    print(f"Model This is the additional data  we add to the tickers for the model {additional_data}")
-    print(f"Model VALIDATE - This is the number of training days of the train dataset {days}")
+
+    logger.log_text(f"Function Model_train_Save|  Input ->ticker list {ticker_list_for_models}")
+    logger.log_text(f"Function Model_train_Save|  Input ->years {years}")
+    logger.log_text(f"Function Model_train_Save|  Input->lags {lags}")
+    logger.log_text(f"Function Model_train_Save|  Input ->predict days {nb_predict_days}")
+    logger.log_text(f"Function Model_train_Save|  Period->yesterday {yesterday}")
+    logger.log_text(f"Function Model_train_Save|  Period->train_date_start {train_date_start}")
+    logger.log_text(f"Function Model_train_Save|  Period->train_date_last {train_date_last}")
+    logger.log_text(f"Function Model_train_Save|  Period->test_date_start {test_date_start}")
+    logger.log_text(f"Function Model_train_Save|  Period->test_date_last {test_date_last}")
+
+    logger.log_text(f"Function Model_train_Save| Tickers for our model {ticker_list_for_models}")
+    logger.log_text(f"Function Model_train_Save| Additional data  we add to the tickers for the model {additional_data}")
+
+    Logger.log_text(f"Function Model_train_Save| Model VALIDATE - This is the number of training days of the train dataset {days}")
 
     # Get features
     #matrix_features_sector = preprocessing(ticker_list_for_models, additional_data, days)
@@ -88,19 +100,18 @@ def Model_Train_Save(ticker_list_for_models, years, lags, additional_data, nb_pr
 
     predictions = pd.DataFrame()  # to store predictions
 
+    filename_json="SP500.json"
     for ticker in ticker_list_for_models:
-        sector = get_ticker_sector(ticker)
+        sector = get_ticker_sector(ticker,filename_json)
         #additional_data = read_config_file()[1]
         additional_data = generate_enhanced_data(sector,ticker)
-        print("in model")
-        print(additional_data)
+
 
         matrix_features_sector = preprocessing(ticker, additional_data, days)
 
         X_train, y_train, X_test, y_test, df_filtered = create_train_test_set(ticker, matrix_features_sector, lags,
                                                                               additional_data, days, nb_predict_days)
-        print(MODEL)
-        print(ticker)
+
         MODEL.fit(X_train, y_train)
         # save the model to disk
         filename = ticker + '_model.sav'
@@ -116,7 +127,7 @@ def Model_Train_Save(ticker_list_for_models, years, lags, additional_data, nb_pr
 
     ticker = "*all*"
     accuracy = balanced_accuracy(ticker, df_lagged)
-    print(f"Accuracy score for {ticker} is {accuracy}.")
+    #print(f"Accuracy score for {ticker} is {accuracy}.")
 
     accuracy = []
     for ticker in ticker_list_for_models:

@@ -6,7 +6,7 @@
 # import bamboolib as bam
 # import bamboolib as bam
 from datetime import datetime, timedelta
-from VBTT2_IO.IO import  read_config_file
+from VBTT2_IO.IO import  read_config_file,instantiate_logging
 from VBTT2_SP500.SP500 import YF_datetime
 # import bamboolib as bam
 import numpy as np
@@ -15,15 +15,17 @@ from yahoo_fin import stock_info as si
 
 
 
+
 def get_yf_dataframe(data, nbdays):
     #this function return a dataframe of ticker data for last nbdays
-    yesterday = datetime.now()  # we want data up to yesterday
+    #yesterday = datetime.now()  # we want data up to yesterday - old changed to line below on dec 24th
+    logger = instantiate_logging()
+    yesterday = YF_datetime() -timedelta(1)
     start_date = yesterday - timedelta(days=nbdays)  # we run the model using data for nbdays
     df_res = pd.DataFrame()
-    print("module get_yf_dataframe - data", data)
-    print("module get_yf_dataframe - nbdays", nbdays)
+    logger.log_text(f"Function get_yf_dataframe| - start_date: {start_date}  - yesterday: {yesterday} - data: {data} - nbdays model: {nbdays}")
     for ticker in data:
-        df_tmp = si.get_data(ticker, start_date, yesterday)
+        df_tmp = si.get_data(ticker, start_date, yesterday+timedelta(1)) #on dec 24th, wd added +timedelta because we discover that si.get_data do not take last day
         df_res[ticker] = df_tmp['close']
     return df_res
 
@@ -32,14 +34,13 @@ def get_yf_dataframe(data, nbdays):
 def preprocessing(ticker, additional_data, days):
     #this function return a matrix of features augmented with fix data for number of days
     #this function will cal get_yf_dataframe to actually import the data from Yahoo
-    print ("module preprocing - ticker",ticker)
-    print("module preprocing - additional_data",additional_data)
-    print("module preprocing - nbdays", days)
+    logger = instantiate_logging()
+    logger.log_text(f"Function preprocessing| was feed into this function - ticker: {ticker}  - additional data: {additional_data} - days: {days}")
     tickers_in_sector_extended = np.concatenate((ticker, additional_data), axis=None)
     tickers_in_sector_extended = tickers_in_sector_extended.tolist()
     matrix_features_sector = get_yf_dataframe(tickers_in_sector_extended, days)
     matrix_features_sector = matrix_features_sector.reindex(sorted(matrix_features_sector.columns), axis=1)
-
+    logger.log_text(f"Function preprocessing| return by this function is matrix_features_sector: {matrix_features_sector.shape}")
     return matrix_features_sector
 
 
@@ -51,6 +52,7 @@ def create_train_test_set(ticker, features, lags,additional_data,days,nb_predict
         nb_predict_days)
 
     df = features[[ticker] + additional_data]
+    df=df.fillna(method='ffill') #this is to fix missing data such as twitter in nov to dec 2022
     df_lagged=pd.DataFrame()
     df_ticker=df[[ticker]]
     for window in range(1, lags + 1):
@@ -87,7 +89,8 @@ def initialize_data(days, lags, nb_predict_days):
     # define main date in models for defining training and test sets dates.
     from datetime import datetime, timedelta
 
-    yesterday=datetime.now()
+    #yesterday=datetime.now() #change dec 23 2022 with line below
+    yesterday=YF_datetime()  #this allow to put last test date to yesterday before 16h00 pm and today otherwise
     start_date = yesterday - timedelta(days=days)
     train_date_start = start_date.strftime("%Y-%m-%d")
     #train_date_last=datetime(2022, 8, 31)
@@ -109,6 +112,8 @@ def create_predict_set(ticker, features, lags, nb_predict_days, additional_data)
     #  List of features X_train, y_train, X_test,y_test
 
     df = features[[ticker] + additional_data]
+    df = df.fillna(method='ffill')  # this is to fix missing data such as twitter in nov to dec 2022
+    print(df)
 
     # duplicate last row of features to use in the lag - this is to add tomorrow date in the predict set
     df_last = df.iloc[-1:]  # we get last date
@@ -122,7 +127,7 @@ def create_predict_set(ticker, features, lags, nb_predict_days, additional_data)
 
     date_predict = YF_datetime()
     date_predict = date_predict.strftime("%Y/%m/%d")
-    df.index.array[-1] = date_predict
+    df.index.array[-1] = date_predict  #remember that we copied last date to have a recorded for next day we want to predict - so we change date accordingly
     # df.index.array[-1] = last_date+timedelta(1) #we change to tomorrows date
 
     #df_lagged = df.copy()
@@ -139,11 +144,11 @@ def create_predict_set(ticker, features, lags, nb_predict_days, additional_data)
     df_lagged=pd.concat((df_ticker,df_lagged),axis=1)
     df_lagged = df_lagged.dropna()
     df_lagged = df_lagged.reindex(sorted(df_lagged.columns), axis=1)
-    df_lagged.to_csv('df_lagged1.csv')
+    #df_lagged.to_csv('df_lagged1.csv')
 
     # test set
-    # df_filtered = df_lagged.loc[test_date_start:test_date_last]
-    df_filtered = df_lagged
+    df_filtered = df_lagged.loc[test_date_start:test_date_last]
+    #df_filtered = df_lagged #changes on dec 22nd so that VBTT3 can work. we uncommented line above. this can have impact on VBTT2 which used line above
 
 
 
